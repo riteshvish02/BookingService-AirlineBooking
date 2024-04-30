@@ -32,7 +32,7 @@ module.exports = {
         allowNull: false,
         defaultValue: 1,
       },
-      totalcoast: {
+      totalcost: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },

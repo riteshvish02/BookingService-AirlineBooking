@@ -4,6 +4,11 @@ const axios = require("axios");
 const AppError = require("../utils/errors/app-error")
 const db = require("../models")
 const {serverconfig} = require("../config")
+const {ENUMS} = require("../utils/common")
+const { BOOKED,
+  CANCELLED,
+  PENDING,
+  INITIATED} = ENUMS.Booking_status
 const Bookingrepo = new BookingRepo()
 
 async function CreateBooking(data){
@@ -16,7 +21,7 @@ async function CreateBooking(data){
    }
      
    const totalBillingAmount = flightdata.price * data.noOfSeats;
-   const bookingpayload = {...data,totalcoast:totalBillingAmount}
+   const bookingpayload = {...data,totalcost:totalBillingAmount}
   const booking = await Bookingrepo.createBooking(bookingpayload,transaction)
   await axios.patch( `${serverconfig.FLIGHTSERVER}/api/v1/flights/${data.flightId}/seats`,{
     seats:data.noOfSeats
@@ -28,12 +33,44 @@ async function CreateBooking(data){
     await transaction.rollback()
     throw error
   }
-    
+   
 
 }
 
+async  function makePayment(data){
+  const transaction = await db.sequelize.transaction()
+  try {
+      const bookingdetails = await Bookingrepo.get(data.BookingId,transaction)
+      if(bookingdetails.status == CANCELLED){
+        throw new AppError("Booking has been expired", StatusCodes.BAD_REQUEST)
+      }
+      // console.log(bookingdetails);
+      const bookingTime = new Date(bookingdetails. createdAt)
+      const currentTime = new Date()
+      // if(currentTime - bookingTime > 300000){
+      //     await Bookingrepo.update(data.BookingId,{status:CANCELLED},transaction)
+      //     throw new AppError('the Booking Has been Expired',StatusCodes.BAD_REQUEST)
+      // }
+     
+      if(bookingdetails.totalcost.toString() !== data.totalcost.toString()) {
+        throw new AppError("the Amount of the does not match", StatusCodes.BAD_REQUEST)
+      }
+      if(bookingdetails.userId.toString() !== data.userId.toString()) {
+            throw new AppError("the User corresponding to the booking does not match", StatusCodes.BAD_REQUEST)
+      }
+
+      //assume payment is successful
+      await Bookingrepo.update(data.BookingId,{status:BOOKED},transaction)
+      await transaction.commit()
+      return bookingdetails
+  } catch (error) {
+    await transaction.rollback()
+    throw error
+  }
+
+}
 // 
 module.exports = {
     CreateBooking,
-    
+    makePayment
 };
