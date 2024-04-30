@@ -47,10 +47,10 @@ async  function makePayment(data){
       // console.log(bookingdetails);
       const bookingTime = new Date(bookingdetails. createdAt)
       const currentTime = new Date()
-      // if(currentTime - bookingTime > 300000){
-      //     await Bookingrepo.update(data.BookingId,{status:CANCELLED},transaction)
-      //     throw new AppError('the Booking Has been Expired',StatusCodes.BAD_REQUEST)
-      // }
+      if(currentTime - bookingTime > 300000){
+          await Bookingrepo.update(data.BookingId,{status:CANCELLED},transaction)
+          throw new AppError('the Booking Has been Expired',StatusCodes.BAD_REQUEST)
+      }
      
       if(bookingdetails.totalcost.toString() !== data.totalcost.toString()) {
         throw new AppError("the Amount of the does not match", StatusCodes.BAD_REQUEST)
@@ -63,6 +63,29 @@ async  function makePayment(data){
       await Bookingrepo.update(data.BookingId,{status:BOOKED},transaction)
       await transaction.commit()
       return bookingdetails
+  } catch (error) {
+    await transaction.rollback()
+    throw error
+  }
+
+}
+
+async function cancelBooking(bookingId){
+  const transaction = await db.sequelize.transaction()
+  try {
+    const bookingdetails = await Bookingrepo.get(bookingId,transaction)
+    if(bookingdetails.status == CANCELLED){
+      await transaction.rollback()
+      return true
+    }
+    await axios.patch( `${serverconfig.FLIGHTSERVER}/api/v1/flights/${bookingdetails.flightId}/seats`,{
+      seats:bookingdetails.noOfSeats,
+      dec:0
+    })
+
+    await Bookingrepo.update(bookingId,{status:CANCELLED},transaction)
+    await transaction.commit()
+    return true
   } catch (error) {
     await transaction.rollback()
     throw error
