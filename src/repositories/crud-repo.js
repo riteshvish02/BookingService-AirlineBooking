@@ -4,7 +4,7 @@ class CrudRepository {
         this.model = model;
     }
 
-    async Create(data){
+    async create(data){
        try {
         const response = await this.model.create(data);
         return response;
@@ -21,6 +21,9 @@ class CrudRepository {
                 id:data
             }
          });
+         if(!response) {
+            throw new AppError('Not able to fund the resource', StatusCodes.NOT_FOUND);
+        }
          return response;
         } catch (error) {
          Logger.error("something went wrong in crud Repo:destroy")
@@ -31,6 +34,9 @@ class CrudRepository {
      async get(data){
         try {
          const response = await this.model.findByPk(data);
+         if(!response) {
+            throw new AppError('Not able to find the resource', StatusCodes.NOT_FOUND);
+         }
          return response;
         } catch (error) {
          Logger.error("something went wrong in crud Repo:get")
