@@ -45,7 +45,7 @@ async  function makePayment(data){
         throw new AppError("Booking has been expired", StatusCodes.BAD_REQUEST)
       }
       // console.log(bookingdetails);
-      const bookingTime = new Date(bookingdetails. createdAt)
+      const bookingTime = new Date(bookingdetails.createdAt)
       const currentTime = new Date()
       if(currentTime - bookingTime > 300000){
           await Bookingrepo.update(data.BookingId,{status:CANCELLED},transaction)

@@ -2,6 +2,8 @@ const { StatusCodes } = require("http-status-codes")
 const {BookingService } = require("../services")
 
 const {ErrorResponse,SuccessResponse} = require("../utils/common");
+
+const inmemDb = {}
 async function createBooking(req, res, next){
     try {
         const Booking = await BookingService.CreateBooking({
@@ -25,11 +27,23 @@ async function createBooking(req, res, next){
 
 async function makePayment(req,res){
   try {
+    const idempotencyKey = req.headers['x-idempotent-key'];
+    if(!idempotencyKey ) {
+      return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({message: 'idempotency key missing'});
+  }
+  if(inmemDb[idempotencyKey]) {
+      return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({message: 'Cannot retry on a successful payment'});
+  } 
     const response = await BookingService.makePayment({
        totalcost:req.body.totalcost,
        userId:req.body.userId,
        BookingId:req.body.bookingId
     })
+    inmemDb[idempotencyKey] = idempotencyKey;
     SuccessResponse.data = response;
     return res    
     .status(StatusCodes.CREATED)
