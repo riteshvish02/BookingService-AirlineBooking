@@ -26,7 +26,6 @@ async function CreateBooking(data){
   await axios.patch( `${serverconfig.FLIGHTSERVER}/api/v1/flights/${data.flightId}/seats`,{
     seats:data.noOfSeats
   })
- 
    await transaction.commit()
    return booking
   } catch (error) {
