@@ -2,6 +2,7 @@ const { StatusCodes } = require("http-status-codes")
 const {BookingRepo} = require("../repositories")
 const axios = require("axios");
 const AppError = require("../utils/errors/app-error")
+const {Queue} = require('../config')
 const db = require("../models")
 const {serverconfig} = require("../config")
 const {ENUMS} = require("../utils/common")
@@ -61,6 +62,11 @@ async  function makePayment(data){
       //assume payment is successful
       await Bookingrepo.update(data.BookingId,{status:BOOKED},transaction)
       await transaction.commit()
+      Queue.senddata({
+        recepient:"kv@gmail.com",
+        subject:"Flight booked",
+        body: `booking successfully done for flight`
+      })
       return bookingdetails
   } catch (error) {
     await transaction.rollback()
