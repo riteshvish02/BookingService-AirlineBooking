@@ -63,9 +63,9 @@ async  function makePayment(data){
       await Bookingrepo.update(data.BookingId,{status:BOOKED},transaction)
       await transaction.commit()
       Queue.senddata({
-        recepient:"kv@gmail.com",
+        recepient:"vkarmaritesh@gmail.com",
         subject:"Flight booked",
-        body: `booking successfully done for flight`
+        body: `booking successfully done for your flight`
       })
       return bookingdetails
   } catch (error) {
